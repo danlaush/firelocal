@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>firelocal demo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: monospace; font-size: 14px; background: #0d1117; color: #e6edf3; display: flex; height: 100vh; overflow: hidden; }
+
+    .panel { display: flex; flex-direction: column; border-right: 1px solid #30363d; }
+    .panel-header { padding: 12px 16px; font-weight: bold; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #8b949e; border-bottom: 1px solid #30363d; }
+
+    /* Left panel: controls */
+    #controls { width: 340px; flex-shrink: 0; overflow-y: auto; }
+    .section { padding: 16px; border-bottom: 1px solid #21262d; }
+    .section h3 { font-size: 12px; color: #8b949e; margin-bottom: 10px; text-transform: uppercase; }
+    label { display: block; font-size: 12px; color: #8b949e; margin-bottom: 4px; }
+    input, textarea, select {
+      width: 100%; padding: 6px 8px; background: #161b22; border: 1px solid #30363d;
+      color: #e6edf3; border-radius: 4px; font-family: monospace; font-size: 13px;
+    }
+    textarea { resize: vertical; min-height: 60px; }
+    input:focus, textarea:focus { outline: none; border-color: #388bfd; }
+    .row { margin-bottom: 8px; }
+    button {
+      padding: 6px 12px; background: #21262d; border: 1px solid #30363d; color: #e6edf3;
+      border-radius: 4px; cursor: pointer; font-family: monospace; font-size: 13px;
+    }
+    button:hover { background: #30363d; }
+    button.primary { background: #238636; border-color: #2ea043; }
+    button.primary:hover { background: #2ea043; }
+    button.danger { background: #da3633; border-color: #f85149; }
+    button.danger:hover { background: #f85149; }
+    .btn-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .status { font-size: 12px; margin-top: 6px; color: #3fb950; min-height: 18px; }
+    .status.error { color: #f85149; }
+
+    /* Middle panel: live docs */
+    #docs-panel { width: 300px; flex-shrink: 0; overflow-y: auto; }
+    .doc-card {
+      padding: 12px 16px; border-bottom: 1px solid #21262d; cursor: pointer;
+      transition: background 0.1s;
+    }
+    .doc-card:hover { background: #161b22; }
+    .doc-card.selected { background: #1c2128; border-left: 2px solid #388bfd; }
+    .doc-id { color: #79c0ff; font-size: 12px; margin-bottom: 4px; }
+    .doc-data { color: #8b949e; font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+    .empty-state { padding: 24px 16px; color: #484f58; text-align: center; }
+
+    /* Right panel: event log */
+    #log-panel { flex: 1; overflow-y: auto; }
+    .log-entry { padding: 8px 16px; border-bottom: 1px solid #0d1117; font-size: 12px; }
+    .log-entry .time { color: #484f58; margin-right: 8px; }
+    .log-entry .tag { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 11px; margin-right: 6px; }
+    .tag-snapshot { background: #1f4329; color: #3fb950; }
+    .tag-write { background: #1c2128; color: #79c0ff; }
+    .tag-error { background: #3d1c1c; color: #f85149; }
+    .log-entry .msg { color: #e6edf3; }
+  </style>
+</head>
+<body>
+
+  <div class="panel" id="controls">
+    <div class="panel-header">Controls</div>
+
+    <div class="section">
+      <h3>Set / Overwrite Doc</h3>
+      <div class="row"><label>Path (e.g. designs/my-doc)</label><input id="set-path" value="designs/doc-1" /></div>
+      <div class="row"><label>Data (JSON)</label><textarea id="set-data">{"title": "My Design", "status": "draft", "refs": []}</textarea></div>
+      <div class="btn-row">
+        <button class="primary" id="btn-set">setDoc</button>
+        <button id="btn-set-merge">setDoc (merge)</button>
+      </div>
+      <div class="status" id="status-set"></div>
+    </div>
+
+    <div class="section">
+      <h3>Add Doc (auto-ID)</h3>
+      <div class="row"><label>Collection</label><input id="add-col" value="designs" /></div>
+      <div class="row"><label>Data (JSON)</label><textarea id="add-data">{"title": "Auto-ID Doc", "status": "crawled"}</textarea></div>
+      <div class="btn-row"><button class="primary" id="btn-add">addDoc</button></div>
+      <div class="status" id="status-add"></div>
+    </div>
+
+    <div class="section">
+      <h3>Update Doc</h3>
+      <div class="row"><label>Path</label><input id="update-path" value="designs/doc-1" /></div>
+      <div class="row"><label>Fields to merge (JSON)</label><textarea id="update-data">{"status": "published"}</textarea></div>
+      <div class="btn-row"><button id="btn-update">updateDoc</button></div>
+      <div class="status" id="status-update"></div>
+    </div>
+
+    <div class="section">
+      <h3>Delete Doc</h3>
+      <div class="row"><label>Path</label><input id="delete-path" value="designs/doc-1" /></div>
+      <div class="btn-row"><button class="danger" id="btn-delete">deleteDoc</button></div>
+      <div class="status" id="status-delete"></div>
+    </div>
+
+    <div class="section">
+      <h3>Get Doc (one-shot)</h3>
+      <div class="row"><label>Path</label><input id="get-path" value="designs/doc-1" /></div>
+      <div class="btn-row"><button id="btn-get">getDoc</button></div>
+      <div class="status" id="status-get"></div>
+    </div>
+
+    <div class="section">
+      <h3>Query Collection</h3>
+      <div class="row"><label>Collection</label><input id="query-col" value="designs" /></div>
+      <div class="row"><label>where field</label><input id="query-field" value="status" /></div>
+      <div class="row">
+        <label>operator</label>
+        <select id="query-op">
+          <option>==</option><option>!=</option><option>&gt;</option>
+          <option>&gt;=</option><option>&lt;</option><option>&lt;=</option>
+        </select>
+      </div>
+      <div class="row"><label>value (JSON)</label><input id="query-val" value='"draft"' /></div>
+      <div class="btn-row"><button id="btn-query">getDocs (filtered)</button></div>
+      <div class="status" id="status-query"></div>
+    </div>
+
+    <div class="section">
+      <h3>Crawl Simulation</h3>
+      <p style="font-size:12px;color:#8b949e;margin-bottom:8px;">
+        Writes a chain of 5 linked docs one-by-one with 600ms delays.
+        Watch the live docs panel update reactively.
+      </p>
+      <div class="btn-row">
+        <button class="primary" id="btn-crawl">Start crawl</button>
+        <button id="btn-clear">Clear all designs</button>
+      </div>
+      <div class="status" id="status-crawl"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="docs-panel">
+    <div class="panel-header">Live: designs/ <span id="doc-count" style="color:#484f58">(0)</span></div>
+    <div id="doc-list"></div>
+  </div>
+
+  <div class="panel" id="log-panel">
+    <div class="panel-header">Event log</div>
+    <div id="log"></div>
+  </div>
+
+  <script type="module" src="./app.ts"></script>
+</body>
+</html>
