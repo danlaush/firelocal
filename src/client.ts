@@ -10,13 +10,12 @@ export class FirelocalClient {
   private subscriptions = new Map<string, SnapshotCallback>();
 
   constructor(workerUrl: string | URL) {
-    console.log('[client] creating SharedWorker', String(workerUrl));
-    const worker = new SharedWorker(workerUrl, { type: 'module', name: 'firelocal' });
-    worker.onerror = (e) => console.error('[client] SharedWorker error:', e);
-    this.port = worker.port;
+    console.log('[client] creating Worker', String(workerUrl));
+    const worker = new Worker(workerUrl, { type: 'module', name: 'firelocal' });
+    worker.onerror = (e) => console.error('[client] Worker error:', e);
+    this.port = worker as unknown as MessagePort;
     this.port.addEventListener('message', this.onMessage.bind(this));
-    this.port.start();
-    console.log('[client] port started');
+    console.log('[client] worker started');
   }
 
   private onMessage(event: MessageEvent<WorkerResponse>): void {

@@ -1,6 +1,6 @@
 /**
- * SharedWorker entry point.
- * One instance shared across all tabs; holds the SQLite DB and fan-outs snapshots.
+ * Dedicated Worker entry point.
+ * Each tab gets its own worker instance; OPFS provides persistence across reloads.
  */
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 // Explicit ?url import so Vite knows to serve this file and we get its dev-server URL.
@@ -11,8 +11,6 @@ import { initSchema } from './sql';
 import { createContext, handleMessage } from './handler';
 import type { HandlerContext } from './handler';
 import type { WorkerRequest, WorkerResponse } from './types';
-
-declare const self: SharedWorkerGlobalScope;
 
 let ctx: HandlerContext | null = null;
 
@@ -51,23 +49,15 @@ const initPromise = (async () => {
   }
 })();
 
-self.addEventListener('connect', (event: MessageEvent) => {
-  console.log('[worker] new port connected');
-  const port: MessagePort = (event as any).ports[0];
-
-  port.addEventListener('message', async (e: MessageEvent<WorkerRequest>) => {
-    console.log('[worker] message received:', e.data?.type, e.data);
-    await initPromise;
-    if (!ctx) {
-      console.error('[worker] ctx is null — init failed');
-      return;
-    }
-    handleMessage(ctx, e.data, (response: WorkerResponse) => {
-      console.log('[worker] sending response:', response.type, response);
-      port.postMessage(response);
-    });
+self.addEventListener('message', async (e: MessageEvent<WorkerRequest>) => {
+  console.log('[worker] message received:', e.data?.type, e.data);
+  await initPromise;
+  if (!ctx) {
+    console.error('[worker] ctx is null — init failed');
+    return;
+  }
+  handleMessage(ctx, e.data, (response: WorkerResponse) => {
+    console.log('[worker] sending response:', response.type, response);
+    self.postMessage(response);
   });
-
-  port.start();
-  console.log('[worker] port started');
 });
