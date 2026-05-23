@@ -9,9 +9,14 @@ export class FirelocalClient {
   private pending = new Map<string, PendingRequest>();
   private subscriptions = new Map<string, SnapshotCallback>();
 
-  constructor(workerUrl: string | URL) {
-    console.log('[client] creating Worker', String(workerUrl));
-    const worker = new Worker(workerUrl, { type: 'module', name: 'firelocal' });
+  constructor(workerOrUrl: string | URL | Worker) {
+    let worker: Worker;
+    if (workerOrUrl instanceof Worker) {
+      worker = workerOrUrl;
+    } else {
+      console.log('[client] creating Worker', String(workerOrUrl));
+      worker = new Worker(workerOrUrl, { type: 'module', name: 'firelocal' });
+    }
     worker.onerror = (e) => console.error('[client] Worker error:', e);
     this.port = worker as unknown as MessagePort;
     this.port.addEventListener('message', this.onMessage.bind(this));

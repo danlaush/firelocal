@@ -9,9 +9,9 @@ export type FirelocalApp = { client: FirelocalClient };
 export type FirelocalDb = { app: FirelocalApp };
 
 export function initFirelocal(
-  workerUrl: string | URL = new URL('./worker.ts', import.meta.url),
+  workerOrUrl: string | URL | Worker = new URL('./worker.ts', import.meta.url),
 ): FirelocalApp {
-  return { client: new FirelocalClient(workerUrl) };
+  return { client: new FirelocalClient(workerOrUrl) };
 }
 
 export function getDb(app: FirelocalApp): FirelocalDb {

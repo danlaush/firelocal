@@ -1,6 +1,6 @@
 import { FirelocalClient } from './client';
-export function initFirelocal(workerUrl = new URL('./worker.ts', import.meta.url)) {
-    return { client: new FirelocalClient(workerUrl) };
+export function initFirelocal(workerOrUrl = new URL('./worker.ts', import.meta.url)) {
+    return { client: new FirelocalClient(workerOrUrl) };
 }
 export function getDb(app) {
     return { app };

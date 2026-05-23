@@ -5,7 +5,7 @@ export declare class FirelocalClient {
     private port;
     private pending;
     private subscriptions;
-    constructor(workerUrl: string | URL);
+    constructor(workerOrUrl: string | URL | Worker);
     private onMessage;
     request(msg: DistributiveOmit<Extract<WorkerRequest, {
         id: string;

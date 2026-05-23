@@ -6,7 +6,7 @@ export type FirelocalApp = {
 export type FirelocalDb = {
     app: FirelocalApp;
 };
-export declare function initFirelocal(workerUrl?: string | URL): FirelocalApp;
+export declare function initFirelocal(workerOrUrl?: string | URL | Worker): FirelocalApp;
 export declare function getDb(app: FirelocalApp): FirelocalDb;
 export type DocumentReference = {
     _kind: 'doc';

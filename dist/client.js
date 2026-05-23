@@ -2,9 +2,15 @@ export class FirelocalClient {
     port;
     pending = new Map();
     subscriptions = new Map();
-    constructor(workerUrl) {
-        console.log('[client] creating Worker', String(workerUrl));
-        const worker = new Worker(workerUrl, { type: 'module', name: 'firelocal' });
+    constructor(workerOrUrl) {
+        let worker;
+        if (workerOrUrl instanceof Worker) {
+            worker = workerOrUrl;
+        }
+        else {
+            console.log('[client] creating Worker', String(workerOrUrl));
+            worker = new Worker(workerOrUrl, { type: 'module', name: 'firelocal' });
+        }
         worker.onerror = (e) => console.error('[client] Worker error:', e);
         this.port = worker;
         this.port.addEventListener('message', this.onMessage.bind(this));
